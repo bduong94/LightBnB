@@ -1,6 +1,7 @@
 const properties = require("./json/properties.json");
 const users = require("./json/users.json");
 const { Pool } = require("pg");
+const { get } = require("express/lib/response");
 
 const pool = new Pool({
   user: "vagrant",
@@ -53,7 +54,7 @@ const getUserWithId = function (id) {
   WHERE id = ${id}`
     )
     .then((res) => {
-      return res["rows"][0]["id"];
+      return res["rows"][0];
     })
     .catch((err) => console.error("query error", err.stack));
 };
@@ -77,14 +78,9 @@ const addUser = function (user) {
   RETURNING *`
     )
     .then((res) => {
-      console.log(res.rows[0]);
       return res.rows[0];
     })
     .catch((err) => console.error("query error", err.stack));
-  // const userId = Object.keys(users).length + 1;
-  // user.id = userId;
-  // users[userId] = user;
-  // return Promise.resolve(user);
 };
 exports.addUser = addUser;
 
@@ -96,7 +92,22 @@ exports.addUser = addUser;
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function (guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+  return pool
+    .query(
+      `SELECT reservations.id, properties.*, reservations.start_date, avg(rating) as average_rating
+  FROM reservations
+  JOIN properties ON reservations.property_id = properties.id
+  JOIN property_reviews ON properties.id = property_reviews.property_id
+  WHERE reservations.guest_id = $1
+  GROUP BY properties.id, reservations.id
+  ORDER BY reservations.start_date
+  LIMIT $2;`,
+      [guest_id, limit]
+    )
+    .then((res) => {
+      return res.rows;
+    })
+    .catch((err) => console.error("query error", err.stack));
 };
 exports.getAllReservations = getAllReservations;
 
