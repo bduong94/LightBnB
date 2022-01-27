@@ -66,15 +66,12 @@ exports.getUserWithId = getUserWithId;
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser = function (user) {
-  console.log(
-    `${typeof user["name"]}, ${typeof user["email"]}, ${typeof user[
-      "password"
-    ]}`
-  );
+  const { name, email, password } = user;
+
   return pool
     .query(
       `INSERT INTO users (name, email, password)
-  VALUES ('${user["name"]}', '${user["email"]}', '${user["password"]}')  
+  VALUES ('${name}', '${email}', '${password}')  
   RETURNING *`
     )
     .then((res) => {
@@ -123,7 +120,6 @@ const getAllProperties = function (options, limit = 10) {
   pool
     .query(`SELECT * FROM properties LIMIT $1`, [limit])
     .then((result) => {
-      console.log(result.rows);
       return result.rows;
     })
     .catch((err) => {
